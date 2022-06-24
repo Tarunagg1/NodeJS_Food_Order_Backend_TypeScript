@@ -11,7 +11,7 @@ export default async (app: Application) => {
   app.use("/images", express.static(imagePath));
 
   app.use("/admin", AdminRoutes);
-  app.use("/vandor", VenderRoutes);
+  app.use("/vendor", VenderRoutes);
 
   return app;
 };

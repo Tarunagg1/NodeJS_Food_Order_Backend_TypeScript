@@ -3,7 +3,7 @@ import { CreateVandor, GetVandorByID, GetVanndors } from "../controllers";
 
 const router = express.Router();
 
-router.post('/m',CreateVandor);
+router.post('/',CreateVandor);
 router.get('/vendor',GetVanndors);
 router.get('/vendor/:id',GetVandorByID);
 
