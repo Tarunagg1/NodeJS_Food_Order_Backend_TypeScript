@@ -22,6 +22,7 @@ import {
   Transaction,
   Vendor,
   Food,
+  Offer,
 } from "../models";
 
 export const CustomerSignUp = async (
@@ -278,20 +279,6 @@ export const EditCustomerProfile = async (
 
 // }
 
-// /* ------------------- Order Section --------------------- */
-
-// const validateTransaction = async(txnId: string) => {
-
-//     const currentTransaction = await Transaction.findById(txnId);
-
-//     if(currentTransaction){
-//         if(currentTransaction.status.toLowerCase() !== 'failed'){
-//             return {status: true, currentTransaction};
-//         }
-//     }
-//     return {status: false, currentTransaction};
-// }
-
 /* ------------------- Order Section --------------------- */
 
 const validateTransaction = async (txnId: string) => {
@@ -414,4 +401,120 @@ export const GetOrderById = async (
   }
 
   return res.status(400).json({ msg: "Order not found" });
+};
+
+/* ------------------- Cart Section --------------------- */
+export const AddToCart = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const customer = req.user;
+
+  if (customer) {
+    const profile = await Customer.findById(customer._id);
+    let cartItems = Array();
+
+    const { _id, unit } = <CartItem>req.body;
+
+    const food = await Food.findById(_id);
+
+    if (food) {
+      if (profile != null) {
+        cartItems = profile.cart;
+
+        if (cartItems.length > 0) {
+          // check and update
+          let existFoodItems = cartItems.filter(
+            (item) => item.food._id.toString() === _id
+          );
+          if (existFoodItems.length > 0) {
+            const index = cartItems.indexOf(existFoodItems[0]);
+
+            if (unit > 0) {
+              cartItems[index] = { food, unit };
+            } else {
+              cartItems.splice(index, 1);
+            }
+          } else {
+            cartItems.push({ food, unit });
+          }
+        } else {
+          // add new Item
+          cartItems.push({ food, unit });
+        }
+
+        if (cartItems) {
+          profile.cart = cartItems as any;
+          const cartResult = await profile.save();
+          return res.status(200).json(cartResult.cart);
+        }
+      }
+    }
+  }
+
+  return res.status(404).json({ msg: "Unable to add to cart!" });
+};
+
+export const GetCart = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const customer = req.user;
+
+  if (customer) {
+    const profile = await Customer.findById(customer._id);
+
+    if (profile) {
+      return res.status(200).json(profile.cart);
+    }
+  }
+
+  return res.status(400).json({ message: "Cart is Empty!" });
+};
+
+export const DeleteCart = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const customer = req.user;
+
+  if (customer) {
+    const profile = await Customer.findById(customer._id)
+      .populate("cart.food")
+      .exec();
+
+    if (profile != null) {
+      profile.cart = [] as any;
+      const cartResult = await profile.save();
+
+      return res.status(200).json(cartResult);
+    }
+  }
+  return res.status(400).json({ message: "cart is Already Empty!" });
+};
+
+export const VerifyOffer = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const offerId = req.params.id;
+  const customer = req.user;
+
+  if (customer) {
+    const appliedOffer = await Offer.findById(offerId);
+
+    if (appliedOffer) {
+      if (appliedOffer.isActive) {
+        return res
+          .status(200)
+          .json({ message: "Offer is Valid", offer: appliedOffer });
+      }
+    }
+  }
+
+  return res.status(400).json({ msg: "Offer is Not Valid" });
 };

@@ -1,8 +1,13 @@
 import express, { Request, Response, NextFunction } from "express";
 import {
   AddFood,
+  AddOffer,
+  EditOffer,
   GetFoods,
+  GetOffers,
+  GetOrderDetails,
   GetVendorProfile,
+  ProcessOrder,
   UpdateVendorCoverImage,
   UpdateVendorProfile,
   UpdateVendorService,
@@ -10,6 +15,7 @@ import {
 } from "../controllers/VendorController";
 import { Authenticate } from "../middleware";
 import multer from "multer";
+import { GetOrders } from "../controllers/CustomerController";
 
 const router = express.Router();
 
@@ -37,9 +43,17 @@ router.post("/food", images, AddFood);
 router.get("/food", GetFoods);
 
 //Offers
-// router.get('/offers', GetOffers);
-// router.post('/offer', AddOffer);
-// router.put('/offer/:id', EditOffer)
+router.get('/offers', GetOffers);
+router.post('/offer', AddOffer);
+router.put('/offer/:id', EditOffer);
+
+
+
+router.get('/orders', GetOrders);
+router.put('/order/:id/process', ProcessOrder);
+router.get('/order/:id', GetOrderDetails)
+
+ 
 
 
 router.get("/", (req: Request, res: Response, next: NextFunction) => {
