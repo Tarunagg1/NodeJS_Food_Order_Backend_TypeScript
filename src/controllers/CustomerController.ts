@@ -248,36 +248,35 @@ export const EditCustomerProfile = async (
 
 // /* ------------------- Delivery Notification --------------------- */
 
-// const assignOrderForDelivery = async(orderId: string, vendorId: string) => {
+const assignOrderForDelivery = async (orderId: string, vendorId: string) => {
+  // find the vendor
+  const vendor = await Vendor.findById(vendorId);
+  if (vendor) {
+    const areaCode = vendor.pincode;
+    // const vendorLat = vendor.lat;
+    // const vendorLng = vendor.lng;
 
-//     // find the vendor
-//     const vendor = await Vendor.findById(vendorId);
-//     if(vendor){
-//         const areaCode = vendor.pincode;
-//         const vendorLat = vendor.lat;
-//         const vendorLng = vendor.lng;
+    //find the available Delivery person
+    const deliveryPerson = await DeliveryUser.find({
+      pincode: areaCode,
+      verified: true,
+      isAvailable: true,
+    });
+    if (deliveryPerson) {
+      // Check the nearest delivery person and assign the order
 
-//         //find the available Delivery person
-//         const deliveryPerson = await DeliveryUser.find({ pincode: areaCode, verified: true, isAvailable: true});
-//         if(deliveryPerson){
-//             // Check the nearest delivery person and assign the order
+      const currentOrder = await Order.findById(orderId);
+      if (currentOrder) {
+        //update Delivery ID
+        currentOrder.deliveryId = deliveryPerson[0]._id;
+        await currentOrder.save();
 
-//             const currentOrder = await Order.findById(orderId);
-//             if(currentOrder){
-//                 //update Delivery ID
-//                 currentOrder.deliveryId = deliveryPerson[0]._id;
-//                 await currentOrder.save();
-
-//                 //Notify to vendor for received new order firebase push notification
-//             }
-
-//         }
-
-//     }
-
-//     // Update Delivery ID
-
-// }
+        //Notify to vendor for received new order firebase push notification
+      }
+    }
+  }
+  // Update Delivery ID
+};
 
 /* ------------------- Order Section --------------------- */
 
@@ -358,7 +357,7 @@ export const CreateOrder = async (
 
       await currentTransaction.save();
 
-      // await assignOrderForDelivery(currentOrder._id, vendorId);
+      await assignOrderForDelivery(currentOrder._id, vendorId);
 
       const profileResponse = await profile.save();
 
@@ -517,4 +516,40 @@ export const VerifyOffer = async (
   }
 
   return res.status(400).json({ msg: "Offer is Not Valid" });
+};
+
+export const CreatePayment = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const customer = req.user;
+
+  const { amount, paymentMode, offerId } = req.body;
+
+  let payableAmount = Number(amount);
+
+  if (offerId) {
+    const appliedOffer = await Offer.findById(offerId);
+
+    if (appliedOffer.isActive) {
+      payableAmount = payableAmount - appliedOffer.offerAmount;
+    }
+  }
+  // perform payment gateway charge api
+
+  // create record on transaction
+  const transaction = await Transaction.create({
+    customer: customer._id,
+    vendorId: "",
+    orderId: "",
+    orderValue: payableAmount,
+    offerUsed: offerId || "NA",
+    status: "OPEN",
+    paymentMode: paymentMode,
+    paymentResponse: "Payment is cash on Delivery",
+  });
+
+  //return transaction
+  return res.status(200).json(transaction);
 };

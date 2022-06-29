@@ -2,6 +2,7 @@ import express, { Request, Response, NextFunction } from "express";
 import {
   AddToCart,
   CreateOrder,
+  CreatePayment,
   CustomerLogin,
   CustomerSignUp,
   CustomerVerify,
@@ -46,7 +47,7 @@ router.delete("/cart", DeleteCart);
 router.get('/offer/verify/:id', VerifyOffer);
 
 // //Payment
-// router.post('/create-payment', CreatePayment);
+router.post('/create-payment', CreatePayment);
 
 // //Order
 router.post("/create-order", CreateOrder);
